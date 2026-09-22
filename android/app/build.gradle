@@ -104,15 +104,24 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // 업로드 키. 값은 ~/.gradle/gradle.properties (저장소 밖)에서 온다.
+        // 프로퍼티가 없는 환경(CI, 다른 체크아웃)에서는 아래 buildTypes가 debug 키로 폴백한다.
+        release {
+            if (project.hasProperty('GAME2048_UPLOAD_STORE_FILE')) {
+                storeFile file(GAME2048_UPLOAD_STORE_FILE)
+                storePassword GAME2048_UPLOAD_STORE_PASSWORD
+                keyAlias GAME2048_UPLOAD_KEY_ALIAS
+                keyPassword GAME2048_UPLOAD_KEY_PASSWORD
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // 업로드 키 프로퍼티가 있으면 그것으로, 없으면 debug 키로 서명한다 (빌드는 항상 성공).
+            signingConfig project.hasProperty('GAME2048_UPLOAD_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
