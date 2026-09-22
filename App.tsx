@@ -3,8 +3,14 @@ import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Board from './src/components/Board';
 import Header from './src/components/Header';
 import { useSwipe } from './src/components/useSwipe';
-import { isGameOver, move, newGame, type Direction, type GameState } from './src/game/board';
+import {
+  isGameOver, move, newGame,
+  type Direction, type GameState, type Tile,
+} from './src/game/board';
 import { load, save } from './src/storage';
+
+// 고스트가 목표 칸까지 미끄러진 뒤 사라지기까지. Tile의 MOVE_MS(120)보다 조금 길다.
+const GHOST_MS = 150;
 
 export default function App() {
   const [state, setState] = useState<GameState | null>(null);
@@ -12,8 +18,9 @@ export default function App() {
   const [prev, setPrev] = useState<GameState | null>(null);
 
   // 이번 수에 새로 생긴 타일 id. 등장 팝 대상.
-  // 렌더 결과에 반영되는 값이므로 ref가 아니라 state로 둔다.
   const [newIds, setNewIds] = useState<Set<number>>(new Set());
+  // 이번 수에 병합으로 사라진 타일. 목표 칸까지 미끄러진 뒤 비운다.
+  const [ghosts, setGhosts] = useState<Tile[]>([]);
 
   // 최초 1회: 저장된 판을 복원하거나 새 게임을 시작한다
   useEffect(() => {
@@ -41,6 +48,13 @@ export default function App() {
     save({ tiles: state.tiles, score: state.score, nextId: state.nextId, best });
   }, [state, best]);
 
+  // 고스트는 이동이 끝나면 지운다
+  useEffect(() => {
+    if (ghosts.length === 0) return;
+    const t = setTimeout(() => setGhosts([]), GHOST_MS);
+    return () => clearTimeout(t);
+  }, [ghosts]);
+
   // setState의 updater 안에서 다른 setState를 부르지 않는다.
   // updater는 순수해야 하며, StrictMode에서는 두 번 호출될 수 있다.
   const handleSwipe = useCallback(
@@ -52,6 +66,7 @@ export default function App() {
       // move는 이동 후 새 타일을 하나 더한다. 그 id만 골라낸다.
       const before = new Set(state.tiles.map((t) => t.id));
       setNewIds(new Set(next.tiles.filter((t) => !before.has(t.id)).map((t) => t.id)));
+      setGhosts(next.ghosts ?? []);
       setPrev(state);
       setState(next);
       setBest((b) => Math.max(b, next.score));
@@ -62,6 +77,7 @@ export default function App() {
   const handleUndo = useCallback(() => {
     if (!prev) return;
     setNewIds(new Set());
+    setGhosts([]);
     setState(prev);
     setPrev(null); // 되돌리기는 1회뿐이다
   }, [prev]);
@@ -69,6 +85,7 @@ export default function App() {
   const handleNewGame = useCallback(() => {
     const fresh = newGame();
     setNewIds(new Set(fresh.tiles.map((t) => t.id)));
+    setGhosts([]);
     setPrev(null);
     setState(fresh);
   }, []);
@@ -92,7 +109,7 @@ export default function App() {
           onNewGame={handleNewGame}
           onUndo={handleUndo}
         />
-        <Board tiles={state.tiles} newTileIds={newIds} />
+        <Board tiles={state.tiles} ghosts={ghosts} newTileIds={newIds} />
         {over && (
           <Text style={styles.gameOver} accessibilityLiveRegion="polite">
             더 이상 움직일 수 없습니다. 새 게임을 눌러주세요.

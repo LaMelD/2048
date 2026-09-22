@@ -1,6 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { colorFor, textColorFor, fontSizeFor } from '../game/colors';
+
+// 이동 spring이 사실상 끝나는 시간. 병합된 숫자는 이 뒤에 바뀐다.
+const MOVE_MS = 120;
 
 type Props = {
   value: number;
@@ -17,12 +20,13 @@ export default function Tile({ value, row, col, cellSize, gap, isNew }: Props) {
 
   const pos = useRef(new Animated.ValueXY({ x, y })).current;
   const scale = useRef(new Animated.Value(isNew ? 0.5 : 1)).current;
-  const firstRender = useRef(true);
-  const prevValue = useRef(value);
+  const mounted = useRef(false);
+  // 화면에 보이는 값. 병합으로 value가 바뀌어도 이동이 끝날 때까지는 옛 값을 보여 준다.
+  const [shown, setShown] = useState(value);
 
   // 자리 이동
   useEffect(() => {
-    if (firstRender.current) return;
+    if (!mounted.current) return;
     Animated.spring(pos, {
       toValue: { x, y },
       useNativeDriver: true,
@@ -31,26 +35,34 @@ export default function Tile({ value, row, col, cellSize, gap, isNew }: Props) {
     }).start();
   }, [x, y, pos]);
 
-  // 등장 팝 / 병합 팝
+  // 등장 팝 (마운트 1회)
   useEffect(() => {
-    const merged = !firstRender.current && value !== prevValue.current;
-    prevValue.current = value;
-
-    if (firstRender.current) {
-      firstRender.current = false;
-      if (!isNew) return;
-    } else if (!merged) {
-      return;
-    }
-
-    scale.setValue(merged ? 1.15 : 0.5);
+    mounted.current = true;
+    if (!isNew) return;
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
       friction: 5,
       tension: 180,
     }).start();
-  }, [value, isNew, scale]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 병합 팝 — 이동이 끝난 뒤 값을 바꾸고 튕긴다
+  useEffect(() => {
+    if (value === shown) return;
+    const t = setTimeout(() => {
+      setShown(value);
+      scale.setValue(1.15);
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+        tension: 180,
+      }).start();
+    }, MOVE_MS);
+    return () => clearTimeout(t);
+  }, [value, shown, scale]);
 
   return (
     <Animated.View
@@ -59,7 +71,7 @@ export default function Tile({ value, row, col, cellSize, gap, isNew }: Props) {
         {
           width: cellSize,
           height: cellSize,
-          backgroundColor: colorFor(value),
+          backgroundColor: colorFor(shown),
           transform: [...pos.getTranslateTransform(), { scale }],
         },
       ]}
@@ -67,12 +79,11 @@ export default function Tile({ value, row, col, cellSize, gap, isNew }: Props) {
       <Text
         style={[
           styles.text,
-          { color: textColorFor(value), fontSize: fontSizeFor(value, cellSize) },
+          { color: textColorFor(shown), fontSize: fontSizeFor(shown, cellSize) },
         ]}
-        // 폰트 크기를 이미 값에 맞춰 줄였지만, 기기 글꼴 배율이 커도 칸을 넘지 않게 한다
         allowFontScaling={false}
       >
-        {value}
+        {shown}
       </Text>
     </Animated.View>
   );

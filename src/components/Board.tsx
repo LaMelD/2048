@@ -7,10 +7,11 @@ const GAP_RATIO = 0.03; // 보드 한 변 대비 칸 사이 간격
 
 type Props = {
   tiles: TileType[];
+  ghosts: TileType[];
   newTileIds: Set<number>;
 };
 
-export default function Board({ tiles, newTileIds }: Props) {
+export default function Board({ tiles, ghosts, newTileIds }: Props) {
   const [size, setSize] = useState(0);
 
   const gap = size * GAP_RATIO;
@@ -41,7 +42,7 @@ export default function Board({ tiles, newTileIds }: Props) {
     <View style={styles.board} onLayout={(e) => setSize(e.nativeEvent.layout.width)}>
       {size > 0 && cells}
       {size > 0 &&
-        tiles.map((t) => (
+        [...ghosts, ...tiles].map((t) => (
           <Tile
             key={t.id}
             value={t.value}
