@@ -86,3 +86,64 @@ function hasChanged(before: Tile[], after: Tile[]): boolean {
     return !a || a.row !== t.row || a.col !== t.col || a.value !== t.value;
   });
 }
+
+/** 빈 칸 하나를 골라 새 타일을 놓는다. 빈 칸이 없으면 그대로 돌려준다. */
+function addRandomTile(tiles: Tile[], nextId: number): { tiles: Tile[]; nextId: number } {
+  const occupied = new Set(tiles.map((t) => t.row * SIZE + t.col));
+  const empty: number[] = [];
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    if (!occupied.has(i)) empty.push(i);
+  }
+  if (empty.length === 0) return { tiles, nextId };
+
+  const spot = empty[Math.floor(Math.random() * empty.length)];
+  const tile: Tile = {
+    id: nextId,
+    value: Math.random() < 0.9 ? 2 : 4, // 2가 90%, 4가 10%
+    row: Math.floor(spot / SIZE),
+    col: spot % SIZE,
+  };
+  return { tiles: [...tiles, tile], nextId: nextId + 1 };
+}
+
+export function newGame(): GameState {
+  let tiles: Tile[] = [];
+  let nextId = 0;
+  for (let i = 0; i < 2; i++) {
+    const added = addRandomTile(tiles, nextId);
+    tiles = added.tiles;
+    nextId = added.nextId;
+  }
+  return { tiles, score: 0, nextId };
+}
+
+/**
+ * 한 수를 둔다. 이동이 없었다면 입력 state를 그대로 반환한다.
+ * 호출자는 반환값이 입력과 같은 객체인지로 "헛스와이프"를 판별할 수 있다.
+ */
+export function move(state: GameState, dir: Direction): GameState {
+  const { tiles, gained, changed } = slide(state, dir);
+  if (!changed) return state;
+
+  const added = addRandomTile(tiles, state.nextId);
+  return {
+    tiles: added.tiles,
+    score: state.score + gained,
+    nextId: added.nextId,
+  };
+}
+
+/** 빈 칸이 없고 인접한 같은 값도 없으면 끝이다. */
+export function isGameOver(state: GameState): boolean {
+  if (state.tiles.length < SIZE * SIZE) return false;
+
+  const grid = new Map(state.tiles.map((t) => [t.row * SIZE + t.col, t.value]));
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const v = grid.get(r * SIZE + c);
+      if (c + 1 < SIZE && grid.get(r * SIZE + c + 1) === v) return false;
+      if (r + 1 < SIZE && grid.get((r + 1) * SIZE + c) === v) return false;
+    }
+  }
+  return true;
+}

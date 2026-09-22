@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { slideLine, slide, SIZE, type Tile, type GameState } from './board.ts';
+import {
+  slideLine, slide, move, newGame, isGameOver,
+  SIZE, type Tile, type GameState,
+} from './board.ts';
 
 // 값 배열로부터 타일 배열을 만든다. id는 0부터, 좌표는 검사하지 않으므로 0.
 function line(...values: number[]): Tile[] {
@@ -170,4 +173,103 @@ test('slide는 입력 상태를 변경하지 않는다', () => {
   ]);
   slide(s, 'left');
   assert.equal(s.tiles[0].col, 3);
+});
+
+test('newGame은 타일 2개로 시작한다', () => {
+  const s = newGame();
+  assert.equal(s.tiles.length, 2);
+  assert.equal(s.score, 0);
+});
+
+test('newGame의 타일 값은 2 또는 4다', () => {
+  for (let i = 0; i < 50; i++) {
+    newGame().tiles.forEach((t) => assert.ok(t.value === 2 || t.value === 4));
+  }
+});
+
+test('newGame의 타일은 서로 다른 칸에 놓인다', () => {
+  for (let i = 0; i < 50; i++) {
+    const [a, b] = newGame().tiles;
+    assert.ok(a.row !== b.row || a.col !== b.col);
+  }
+});
+
+test('newGame의 타일 id는 서로 다르다', () => {
+  const s = newGame();
+  assert.notEqual(s.tiles[0].id, s.tiles[1].id);
+  assert.equal(s.nextId, 2);
+});
+
+test('move는 이동이 있으면 타일을 정확히 하나 늘린다', () => {
+  const s = stateOf([
+    [0, 0, 0, 2],
+    [0, 0, 0, 2],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const after = move(s, 'up');
+  // 2와 2가 병합되어 1개 → 새 타일 1개 추가 = 2개
+  assert.equal(after.tiles.length, 2);
+});
+
+test('move는 병합 점수를 누적한다', () => {
+  const s = stateOf([
+    [2, 2, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const after = move(s, 'left');
+  assert.equal(after.score, 4);
+});
+
+test('막힌 방향으로 move하면 같은 객체가 그대로 돌아온다', () => {
+  const s = stateOf([
+    [2, 4, 2, 4],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const after = move(s, 'left');
+  assert.equal(after, s); // 참조가 같아야 한다 → 새 타일이 생기지 않았다는 뜻
+});
+
+test('빈 칸이 있으면 게임오버가 아니다', () => {
+  const s = stateOf([
+    [2, 4, 8, 16],
+    [4, 8, 16, 32],
+    [8, 16, 32, 64],
+    [16, 32, 64, 0],
+  ]);
+  assert.equal(isGameOver(s), false);
+});
+
+test('가득 찼어도 인접한 같은 값이 있으면 게임오버가 아니다', () => {
+  const s = stateOf([
+    [2, 2, 8, 16],
+    [4, 8, 16, 32],
+    [8, 16, 32, 64],
+    [16, 32, 64, 128],
+  ]);
+  assert.equal(isGameOver(s), false);
+});
+
+test('가득 찼고 인접한 같은 값이 없으면 게임오버다', () => {
+  const s = stateOf([
+    [2, 4, 8, 16],
+    [4, 8, 16, 32],
+    [8, 16, 32, 64],
+    [16, 32, 64, 128],
+  ]);
+  assert.equal(isGameOver(s), true);
+});
+
+test('세로로 인접한 같은 값도 게임오버가 아니다', () => {
+  const s = stateOf([
+    [2, 4, 8, 16],
+    [2, 8, 16, 32],
+    [8, 16, 32, 64],
+    [16, 32, 64, 128],
+  ]);
+  assert.equal(isGameOver(s), false);
 });
