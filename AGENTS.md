@@ -7,9 +7,10 @@
 과거 결정이나 작업 이력에 대한 질문이 오면 **추측하지 말고 이 순서로 찾는다.**
 
 1. `docs/worklog/` — 진행 중인 작업의 실측·결정. 완료분은 `docs/worklog/done/`
-2. `docs/linear-archive/` — Linear 이슈 로컬 미러 (코멘트 원문 포함, 기각된 이슈도 있음)
-3. frontmatter 검색 — 예: `rg 'components: \[[^]]*\bgame\b' docs/`
-4. `git log` — 위에서 안 나오면
+2. frontmatter 검색 — 예: `rg 'components: \[[^]]*\bgame\b' docs/`
+3. `git log` — 위에서 안 나오면
+
+이 프로젝트는 이슈 트래커를 쓰지 않는다. 계획 파일과 worklog가 정본이다.
 
 태그는 `docs/history-vocab.txt`의 어휘만 쓴다. 자유 태그를 만들지 않는다.
 
@@ -18,7 +19,7 @@
 - **작업 시작 = `docs/worklog/` 에 파일 생성.** 예외 없다.
 - worklog에 쓰는 것: 왜 하는지, 실행한 명령 원문, 실측된 사실, 결정 사항
 - worklog에 쓰지 않는 것: AI와의 문답, 중간 논의, 추측 — 컨텍스트를 오염시킨다
-- 완료 시: Linear Done 전환 + `docs/worklog/done/` 이관 + 같은 커밋에 `python3 tools/linear-export.py` 실행 결과 포함
+- 완료 시: 해당 worklog를 `docs/worklog/done/`으로 이관하고, 계획 파일의 체크박스를 채운 커밋에 함께 넣는다
 
 ## 반드시 지킬 제약
 
@@ -41,7 +42,6 @@ node --test src/                              # 테스트
 npx tsc --noEmit                              # 타입 검사
 npx expo run:android --device                 # 디버그 빌드 설치
 cd android && ./gradlew :app:bundleRelease    # 출시용 AAB
-python3 tools/linear-export.py --team <팀키>   # Linear 미러 갱신
 ```
 
 ## 문서
