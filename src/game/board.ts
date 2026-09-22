@@ -13,6 +13,11 @@ export type GameState = {
   tiles: Tile[];
   score: number;
   nextId: number;
+  /**
+   * 이번 수에 병합으로 사라진 타일. 합쳐진 타일의 최종 좌표를 갖는다.
+   * 화면은 이 타일을 그 자리까지 미끄러뜨린 뒤 지운다. 저장하지 않는다.
+   */
+  ghosts?: Tile[];
 };
 
 /**
@@ -20,8 +25,13 @@ export type GameState = {
  * 좌표는 건드리지 않는다. 호출자가 결과 순서에 맞춰 부여한다.
  * 한 수에서 이미 병합된 타일은 다시 병합되지 않는다.
  */
-export function slideLine(line: Tile[]): { result: Tile[]; gained: number } {
+export function slideLine(line: Tile[]): {
+  result: Tile[];
+  gained: number;
+  removed: { tile: Tile; into: number }[];
+} {
   const result: Tile[] = [];
+  const removed: { tile: Tile; into: number }[] = [];
   let gained = 0;
   let i = 0;
 
@@ -31,6 +41,7 @@ export function slideLine(line: Tile[]): { result: Tile[]; gained: number } {
     if (b && b.value === a.value) {
       const merged = { ...a, value: a.value * 2 };
       result.push(merged);
+      removed.push({ tile: { ...b }, into: result.length - 1 });
       gained += merged.value;
       i += 2; // 병합에 쓰인 두 타일을 건너뛴다 → 같은 수에 재병합 불가
     } else {
@@ -39,7 +50,7 @@ export function slideLine(line: Tile[]): { result: Tile[]; gained: number } {
     }
   }
 
-  return { result, gained };
+  return { result, gained, removed };
 }
 
 /**
@@ -49,14 +60,19 @@ export function slideLine(line: Tile[]): { result: Tile[]; gained: number } {
 export function slide(
   state: GameState,
   dir: Direction,
-): { tiles: Tile[]; gained: number; changed: boolean } {
+): { tiles: Tile[]; gained: number; changed: boolean; ghosts: Tile[] } {
   const horizontal = dir === 'left' || dir === 'right';
   const forward = dir === 'left' || dir === 'up'; // 인덱스 0 쪽으로 미는가
   const next: Tile[] = [];
+  const ghosts: Tile[] = [];
   let gained = 0;
 
+  const place = (t: Tile, k: number, idx: number): Tile => {
+    const pos = forward ? idx : SIZE - 1 - idx;
+    return horizontal ? { ...t, row: k, col: pos } : { ...t, row: pos, col: k };
+  };
+
   for (let k = 0; k < SIZE; k++) {
-    // k번째 줄의 타일: 가로 이동이면 row===k, 세로 이동이면 col===k
     const lane = state.tiles
       .filter((t) => (horizontal ? t.row : t.col) === k)
       .sort((a, b) => {
@@ -65,16 +81,15 @@ export function slide(
         return forward ? pa - pb : pb - pa;
       });
 
-    const { result, gained: g } = slideLine(lane);
+    const { result, gained: g, removed } = slideLine(lane);
     gained += g;
 
-    result.forEach((t, idx) => {
-      const pos = forward ? idx : SIZE - 1 - idx;
-      next.push(horizontal ? { ...t, row: k, col: pos } : { ...t, row: pos, col: k });
-    });
+    result.forEach((t, idx) => next.push(place(t, k, idx)));
+    // 사라진 타일은 합쳐진 타일과 같은 자리로 보낸다
+    removed.forEach(({ tile, into }) => ghosts.push(place(tile, k, into)));
   }
 
-  return { tiles: next, gained, changed: hasChanged(state.tiles, next) };
+  return { tiles: next, gained, changed: hasChanged(state.tiles, next), ghosts };
 }
 
 /** 병합으로 타일이 줄었거나, 어느 타일이든 자리가 바뀌었으면 변화로 본다. */
@@ -122,7 +137,7 @@ export function newGame(): GameState {
  * 호출자는 반환값이 입력과 같은 객체인지로 "헛스와이프"를 판별할 수 있다.
  */
 export function move(state: GameState, dir: Direction): GameState {
-  const { tiles, gained, changed } = slide(state, dir);
+  const { tiles, gained, changed, ghosts } = slide(state, dir);
   if (!changed) return state;
 
   const added = addRandomTile(tiles, state.nextId);
@@ -130,6 +145,7 @@ export function move(state: GameState, dir: Direction): GameState {
     tiles: added.tiles,
     score: state.score + gained,
     nextId: added.nextId,
+    ghosts,
   };
 }
 

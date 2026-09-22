@@ -273,3 +273,67 @@ test('세로로 인접한 같은 값도 게임오버가 아니다', () => {
   ]);
   assert.equal(isGameOver(s), false);
 });
+
+test('slideLine: 병합으로 사라진 타일과 합쳐진 자리를 알려준다', () => {
+  const { result, removed } = slideLine(line(2, 2, 4));
+  assert.equal(removed.length, 1);
+  assert.equal(removed[0].tile.id, 1); // 뒤쪽 타일이 사라진다
+  assert.equal(removed[0].into, 0);    // result[0]에 합쳐졌다
+  assert.equal(result[0].id, 0);       // 앞쪽 타일이 남는다
+});
+
+test('slideLine: 병합이 없으면 removed가 비어 있다', () => {
+  const { removed } = slideLine(line(2, 4, 8));
+  assert.deepEqual(removed, []);
+});
+
+test('slide: 고스트는 합쳐진 타일과 같은 좌표를 갖는다 (왼쪽)', () => {
+  const s = stateOf([
+    [0, 0, 2, 2],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const { tiles, ghosts } = slide(s, 'left');
+  assert.equal(ghosts.length, 1);
+  assert.equal(ghosts[0].id, s.tiles[1].id); // 원래 (0,3)에 있던 뒤쪽 타일
+  assert.equal(ghosts[0].row, 0);
+  assert.equal(ghosts[0].col, 0);            // 결과 4가 놓인 자리
+  assert.equal(tiles[0].col, 0);
+  assert.equal(tiles[0].value, 4);
+});
+
+test('slide: 고스트 좌표는 미는 방향 끝을 따른다 (오른쪽)', () => {
+  const s = stateOf([
+    [2, 2, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const { ghosts } = slide(s, 'right');
+  assert.equal(ghosts.length, 1);
+  assert.equal(ghosts[0].id, s.tiles[0].id); // 오른쪽으로 밀면 앞쪽은 (0,1), 사라지는 건 (0,0)
+  assert.equal(ghosts[0].col, 3);
+});
+
+test('move: 병합이 있으면 ghosts가 상태에 실린다', () => {
+  const s = stateOf([
+    [2, 2, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const after = move(s, 'left');
+  assert.equal(after.ghosts?.length, 1);
+});
+
+test('move: 병합이 없으면 ghosts가 빈 배열이다', () => {
+  const s = stateOf([
+    [0, 0, 0, 2],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 0],
+  ]);
+  const after = move(s, 'left');
+  assert.deepEqual(after.ghosts, []);
+});
