@@ -1,0 +1,10 @@
+# 2048 통제 어휘 정본 — 한 줄 1태그, 자유 태그 금지.
+# 새 태그가 필요하면 여기에 먼저 추가한다. 어휘가 흩어지면 grep이 죽는다.
+
+game      # 게임 규칙 로직 (src/game/board.ts) — 병합·이동·게임오버
+ui        # 화면·애니메이션·제스처 (src/components/)
+storage   # 영속화 — AsyncStorage, 이어하기, 최고점수
+build     # Expo·gradle 빌드 설정, 네이티브 프로젝트
+release   # Play 출시 — 서명, 버전, 스토어 자산, 정책 문서
+docs      # 설계·계획 문서
+infra     # 개발 환경, 훅, 도구 스크립트
