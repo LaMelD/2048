@@ -33,12 +33,12 @@
 - **패키지명 `io.github.lameld.game2048`은 고정이다.** Play 업로드 후 영구 변경 불가.
 - **키스토어(`.jks`)와 비밀번호를 저장소에 넣지 않는다.** `.jks`는 `~/keystores/`, 비밀번호는 `~/.gradle/gradle.properties`에 둔다.
 - **`android/`는 커밋한다.** 릴리즈 서명 설정이 그 안에 있다. gitignore하면 prebuild 재실행 때 사라진다.
-- 테스트 프레임워크를 설치하지 않는다. `node --test src/`로 돌린다.
+- 테스트 프레임워크를 설치하지 않는다. `node --test`로 돌린다.
 
 ## 명령
 
 ```bash
-node --test src/                              # 테스트
+node --test                              # 테스트
 npx tsc --noEmit                              # 타입 검사
 npx expo run:android --device                 # 디버그 빌드 설치
 cd android && ./gradlew :app:bundleRelease    # 출시용 AAB
