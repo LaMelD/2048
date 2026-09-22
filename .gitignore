@@ -41,3 +41,6 @@ yarn-error.*
 # /android 는 의도적으로 무시하지 않는다 — 릴리즈 서명 설정(signingConfigs.release)이
 # android/app/build.gradle 에 들어가므로, 무시하면 prebuild 재실행 때 사라진다.
 /ios
+
+# Claude Code 개인 설정 — 팀 공유용 settings.json은 커밋, local은 제외
+.claude/settings.local.json
