@@ -1,6 +1,43 @@
-# 서명 관련 — 절대 커밋 금지
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
 *.jks
 *.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
 
-node_modules/
-.expo/
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+# /android 는 의도적으로 무시하지 않는다 — 릴리즈 서명 설정(signingConfigs.release)이
+# android/app/build.gradle 에 들어가므로, 무시하면 prebuild 재실행 때 사라진다.
+/ios
