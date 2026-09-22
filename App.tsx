@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 import Board from './src/components/Board';
 import Header from './src/components/Header';
+import { useSwipe } from './src/components/useSwipe';
 import { isGameOver, move, newGame, type Direction, type GameState } from './src/game/board';
 import { load, save } from './src/storage';
 
@@ -72,6 +73,8 @@ export default function App() {
     setState(fresh);
   }, []);
 
+  const swipe = useSwipe(handleSwipe);
+
   if (!state) {
     return <SafeAreaView style={styles.screen} />;
   }
@@ -81,7 +84,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="dark-content" backgroundColor="#faf8ef" />
-      <View style={styles.content}>
+      <View style={styles.content} {...swipe}>
         <Header
           score={state.score}
           best={best}
@@ -89,7 +92,7 @@ export default function App() {
           onNewGame={handleNewGame}
           onUndo={handleUndo}
         />
-        <Board tiles={state.tiles} newTileIds={newIds} onSwipe={handleSwipe} />
+        <Board tiles={state.tiles} newTileIds={newIds} />
         {over && (
           <Text style={styles.gameOver} accessibilityLiveRegion="polite">
             더 이상 움직일 수 없습니다. 새 게임을 눌러주세요.
